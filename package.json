@@ -216,11 +216,12 @@
     "yallist": "^3.1.1",
     "yocto-queue": "^0.1.0"
   },
-  "devDependencies": {},
-  "description": ""
-  ,
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  },
+  "description": "",
   "workspaces": [
-    "packages/react-frontend"
+    "packages/react-frontend",
+    "packages/express-backend"
   ]
 }
-
