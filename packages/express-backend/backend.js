@@ -1,9 +1,12 @@
 // backend.js
 import express from "express";
+import cors from "cors";
+
 
 const app = express();
 const port = 8000;
 
+app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -41,22 +44,25 @@ const users = {
 };
 
 // Helper Functions
-const findUserByName = (name) => {
-  return users["users_list"].filter((user) => user["name"] === name);
-};
+//commented out for assignment 3
+//const findUserByName = (name) => {
+  //return users["users_list"].filter((user) => user["name"] === name);
+//};
 
-const findUserByNameAndJob = (name, job) => {
-  return users["users_list"].filter(
-    (user) => user["name"] === name && user["job"] === job
-  );
-};
+//const findUserByNameAndJob = (name, job) => {
+  //return users["users_list"].filter(
+    //(user) => user["name"] === name && user["job"] === job
+  //);
+//};
 
 const findUserById = (id) =>
   users["users_list"].find((user) => user["id"] === id);
 
 const addUser = (user) => {
-  users["users_list"].push(user);
-  return user;
+  const id = Math.random().toString(36).substr(2, 9); // Generate random ID
+  const userWithId = { ...user, id };
+  users["users_list"].push(userWithId);
+  return userWithId;
 };
 
 const deleteUserById = (id) => {
@@ -70,22 +76,17 @@ const deleteUserById = (id) => {
 };
 
 // Routes
-app.get("/users", (req, res) => {
-  const name = req.query.name;
-  const job = req.query.job;
-
-  if (name !== undefined && job !== undefined) {
-    let result = findUserByNameAndJob(name, job);
-    result = { users_list: result };
-    res.send(result);
-  } else if (name !== undefined) {
-    let result = findUserByName(name);
-    result = { users_list: result };
-    res.send(result);
-  } else {
-    res.send(users);
+app.post("/users", (req, res) => {
+  const userToAdd = req.body;
+  if (!userToAdd.name || !userToAdd.job) {
+    return res.status(400).send("Missing 'name' or 'job' in request body");
   }
+  const id = Math.random().toString(36).substr(2, 9); // Generate random ID
+  const createdUser = { ...userToAdd, id }; // Add ID to the user object
+  users["users_list"].push(createdUser);
+  res.status(201).json({ message: "User created", user: createdUser }); // Respond with the new user
 });
+
 
 app.get("/users/:id", (req, res) => {
   const id = req.params["id"];
@@ -99,8 +100,17 @@ app.get("/users/:id", (req, res) => {
 
 app.post("/users", (req, res) => {
   const userToAdd = req.body;
-  addUser(userToAdd);
-  res.status(201).send();
+
+  // Ensure that user data has both `name` and `job`
+  if (!userToAdd.name || !userToAdd.job) {
+    return res.status(400).send("Missing 'name' or 'job' in request body");
+  }
+
+  // Add user to the list
+  const createdUser = addUser(userToAdd);
+
+  // Respond with the newly created user and 201 status
+  res.status(201).json({ message: "User created", user: createdUser });
 });
 
 app.delete("/users/:id", (req, res) => {
