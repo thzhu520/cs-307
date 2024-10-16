@@ -6,73 +6,81 @@ import Form from "./Form";
 function MyApp() {
   const [characters, setCharacters] = useState([]);
 
-  useEffect(() => {
-    fetchUsers()
-      .then((res) => res.json())
-      .then((json) => setCharacters(json["users_list"]))
-      .catch((error) => { console.log(error); });
-  }, [] );
-
+  // Function to fetch users from the backend
   function fetchUsers() {
-    const promise = fetch("http://localhost:8000/users");
-    return promise;
+    return fetch("http://localhost:8000/users");
   }
 
+  // useEffect hook to fetch users when the component first mounts
+  useEffect(() => {
+    fetchUsers()
+      .then((res) => res.json()) // Parse the JSON from the response
+      .then((json) => {
+        // Set the users in the component's state
+        setCharacters(json["users_list"]);
+      })
+      .catch((error) => {
+        console.error("Error fetching users:", error); // Log any errors
+      });
+  }, []); // Empty array ensures this only runs once when the component mounts
+
+  function removeOneCharacter(index) {
+    const userId = characters[index]._id; // Get the ID of the user to delete
+  
+    // Make the DELETE request to the backend
+    fetch(`http://localhost:8000/users/${userId}`, { method: 'DELETE' })
+      .then((res) => {
+        if (res.status === 204) {
+          // If deletion was successful, remove from local state
+          const updated = characters.filter((character, i) => i !== index);
+          setCharacters(updated);
+        } else {
+          throw new Error("Failed to delete user");
+        }
+      })
+      .catch((error) => {
+        console.error("Error deleting user:", error);
+      });
+  }
+
+  // Function to post a new user to the backend
   function postUser(person) {
-    const promise = fetch("Http://localhost:8000/users", {
+    const promise = fetch("http://localhost:8000/users", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(person),
+      body: JSON.stringify(person), // Send the user data as a JSON string
     });
-    return promise;
-  }
 
-  function deleteUserById(id) {
-    return fetch(`http://localhost:8000/users/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  function removeOneCharacter(index) {
-    const characterToDelete = characters[index];
-    deleteUserById(characterToDelete.id)
-      .then(response => {
-        if (response.status === 204) {
-          const updated = characters.filter((_, i) => i !== index);
-          setCharacters(updated);
-        }
-      })
-      .catch(error => console.log("Error deleting user:", error));
+    return promise; // Return the promise so we can handle it later
   }
 
   function updateList(person) {
     postUser(person)
-      .then(response => {
-        // Ensure the response is OK (status 201)
-        if (response.status === 201) {
-          return response.json(); // Parse the JSON from the response
+      .then((res) => {
+        if (res.status === 201) {
+          return res.json(); // Get the newly created user from the response
         } else {
-          throw new Error("Failed to add user");
+          throw new Error("Failed to create user");
         }
       })
-      .then(data => {
-        // Update the local state with the new user (including the ID)
-        setCharacters([...characters, data.user]); 
+      .then((newUser) => {
+        // Update the state with the new user (which includes the generated ID)
+        setCharacters([...characters, newUser]);
       })
-      .catch(error => console.log("Error adding user:", error));
+      .catch((error) => {
+        console.error("Error adding user:", error);
+      });
   }
-  
-  
 
   return (
     <div className="container">
+      <h1>List of Characters</h1>
       <Table characterData={characters} removeCharacter={removeOneCharacter} />
       <Form handleSubmit={updateList} />
-      
     </div>
   );
-  
 }
+
 export default MyApp;
